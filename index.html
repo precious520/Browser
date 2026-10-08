@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9 Page Browser</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #111827;
+}
+
+.topbar {
+    height: 55px;
+    background: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px;
+}
+
+.title {
+    color: white;
+    font-weight: bold;
+    padding: 0 8px;
+}
+
+#mainURL {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+    background: #1f2937;
+    color: white;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 13px;
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.reset {
+    background: #374151;
+}
+
+.grid {
+    width: 100%;
+    height: calc(100vh - 55px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 3px;
+    background: #000;
+}
+
+.page {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 1px solid #374151;
+}
+
+.pagebar {
+    height: 34px;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    background: #1f2937;
+}
+
+.number {
+    width: 20px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.url {
+    flex: 1;
+    min-width: 0;
+    height: 27px;
+    border: none;
+    border-radius: 5px;
+    padding: 0 6px;
+    font-size: 11px;
+    background: #111827;
+    color: white;
+}
+
+.go {
+    padding: 6px 8px;
+    font-size: 10px;
+}
+
+.expand {
+    background: #4b5563;
+    padding: 6px 8px;
+    font-size: 10px;
+}
+
+iframe {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+.fullscreen {
+    position: fixed;
+    left: 0;
+    top: 55px;
+    width: 100%;
+    height: calc(100vh - 55px);
+    z-index: 9999;
+}
+
+@media (max-width: 600px) {
+
+    .title {
+        display: none;
+    }
+
+    .topbar {
+        height: 52px;
+    }
+
+    .grid {
+        height: calc(100vh - 52px);
+    }
+
+    .fullscreen {
+        top: 52px;
+        height: calc(100vh - 52px);
+    }
+
+    .pagebar {
+        height: 31px;
+        min-height: 31px;
+    }
+
+    .number {
+        width: 15px;
+        font-size: 10px;
+    }
+
+    .url {
+        font-size: 9px;
+    }
+
+    .go,
+    .expand {
+        padding: 5px;
+        font-size: 9px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+
+    <div class="title">9-PAGE</div>
+
+    <input
+        id="mainURL"
+        type="text"
+        placeholder="Enter website address..."
+    >
+
+    <button onclick="loadAll()">LOAD ALL</button>
+
+    <button class="reset" onclick="resetPages()">RESET</button>
+
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+
+const grid = document.getElementById("grid");
+
+let savedPages =
+    JSON.parse(localStorage.getItem("nineBrowserPages") || "[]");
+
+
+function makeURL(url) {
+
+    url = url.trim();
+
+    if (!url) {
+        return "";
+    }
+
+    if (
+        !url.startsWith("http://") &&
+        !url.startsWith("https://")
+    ) {
+        url = "https://" + url;
+    }
+
+    return url;
+}
+
+
+function savePages() {
+
+    const pages =
+        [...document.querySelectorAll(".url")]
+        .map(input => input.value);
+
+    localStorage.setItem(
+        "nineBrowserPages",
+        JSON.stringify(pages)
+    );
+}
+
+
+function createPage(number) {
+
+    const page = document.createElement("div");
+
+    page.className = "page";
+
+    const oldURL = savedPages[number - 1] || "";
+
+    page.innerHTML = `
+
+        <div class="pagebar">
+
+            <div class="number">
+                ${number}
+            </div>
+
+            <input
+                class="url"
+                value="${oldURL}"
+                placeholder="Website"
+                type="text"
+            >
+
+            <button class="go">
+                GO
+            </button>
+
+            <button class="expand">
+                □
+            </button>
+
+        </div>
+
+        <div class="content">
+
+            <div style="
+                display:flex;
+                height:100%;
+                align-items:center;
+                justify-content:center;
+                color:#777;
+                font-size:12px;
+                text-align:center;
+            ">
+                Enter a website above<br>
+                and press GO
+            </div>
+
+        </div>
+    `;
+
+
+    const input =
+        page.querySelector(".url");
+
+    const goButton =
+        page.querySelector(".go");
+
+    const expandButton =
+        page.querySelector(".expand");
+
+    const content =
+        page.querySelector(".content");
+
+
+    function openPage() {
+
+        const url = makeURL(input.value);
+
+        if (!url) {
+            return;
+        }
+
+        input.value = url;
+
+        savePages();
+
+        content.innerHTML = "";
+
+        const frame =
+            document.createElement("iframe");
+
+        frame.src = url;
+
+        frame.allowFullscreen = true;
+
+        content.appendChild(frame);
+    }
+
+
+    goButton.onclick = openPage;
+
+
+    input.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+                openPage();
+            }
+
+        }
+    );
+
+
+    expandButton.onclick =
+        function() {
+
+            page.classList.toggle("fullscreen");
+
+            if (
+                page.classList.contains("fullscreen")
+            ) {
+
+                expandButton.textContent = "×";
+
+            } else {
+
+                expandButton.textContent = "□";
+
+            }
+        };
+
+
+    return page;
+}
+
+
+for (let i = 1; i <= 9; i++) {
+
+    const page =
+        createPage(i);
+
+    grid.appendChild(page);
+
+}
+
+
+function loadAll() {
+
+    const mainURL =
+        makeURL(
+            document.getElementById("mainURL").value
+        );
+
+    if (!mainURL) {
+        return;
+    }
+
+    document
+        .querySelectorAll(".url")
+        .forEach(function(input) {
+
+            input.value = mainURL;
+
+        });
+
+
+    document
+        .querySelectorAll(".go")
+        .forEach(function(button) {
+
+            button.click();
+
+        });
+
+}
+
+
+function resetPages() {
+
+    localStorage.removeItem(
+        "nineBrowserPages"
+    );
+
+    location.reload();
+
+}
+
+</script>
+
+</body>
+</html>
